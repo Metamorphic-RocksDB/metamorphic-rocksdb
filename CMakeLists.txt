@@ -3,7 +3,7 @@ project(AwsQueue)
 
 include_directories(/usr/local/include)
 
-find_package(AWSSDK REQUIRED COMPONENTS sqs)
+find_package(AWSSDK REQUIRED COMPONENTS sqs core)
 
 add_executable(AwsQueue AwsQueue.cpp)
 
