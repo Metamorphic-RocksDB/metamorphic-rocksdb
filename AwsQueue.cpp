@@ -8,7 +8,7 @@
 #include <aws/sqs/model/ReceiveMessageRequest.h>
 #include <aws/sqs/model/SendMessageRequest.h>
 #include <aws/sqs/model/DeleteMessageRequest.h>
-#include <aws/sqs/model/ListQueuesRequest.h>
+
 
 using std::string;
 using std::cout;
@@ -23,8 +23,7 @@ string waitForResponse(const string& queueUrl) {
         clientConfig.region = Aws::Region::US_EAST_2; // Set the region to Ohio
 
         Aws::SQS::SQSClient sqs(clientConfig);
-        // Queue URL
-
+  
         // Create a receive message request
         Aws::SQS::Model::ReceiveMessageRequest receive_request;
         receive_request.SetQueueUrl(queueUrl);
@@ -40,7 +39,6 @@ string waitForResponse(const string& queueUrl) {
             if (!messages.empty()) {
                 for (const auto &message: messages) {
                     result = message.GetBody();
-                    std::cout << "Message received: " << result << std::endl;
 
                     // After processing, delete the message from the queue
                     Aws::SQS::Model::DeleteMessageRequest delete_request;
@@ -48,14 +46,14 @@ string waitForResponse(const string& queueUrl) {
                     delete_request.SetReceiptHandle(message.GetReceiptHandle());
                     auto delete_outcome = sqs.DeleteMessage(delete_request);
                     if (!delete_outcome.IsSuccess()) {
-                        std::cerr << "Error deleting message: " << delete_outcome.GetError().GetMessage() << std::endl;
+                        std::cerr << "Error deleting message: " << delete_outcome.GetError().GetMessage() << endl;
                     }
                 }
             } else {
-                std::cout << "No messages to process." << std::endl;
+                cout << "No messages to process." << endl;
             }
         } else {
-            std::cerr << "Error receiving messages: " << receive_outcome.GetError().GetMessage() << std::endl;
+            std::cerr << "Error receiving messages: " << receive_outcome.GetError().GetMessage() << endl;
         }
     }
     Aws::ShutdownAPI(options);
@@ -80,12 +78,8 @@ void sendMessage(const string& message,const string& queueUrl) {
 
         // Hash the input string
         Aws::Utils::Crypto::Sha256 sha256;
-        Aws::String buffer(message + nanoStr);
-
-        auto hashBytes = sha256.Calculate(buffer);
+        auto hashBytes = sha256.Calculate(message + nanoStr);
         auto hash = Aws::Utils::HashingUtils::HexEncode(hashBytes.GetResult());
-
-        cout << "hash:" << hash << " nanos:" << nanoStr << endl;
 
         Aws::Client::ClientConfiguration clientConfig;
         clientConfig.region = Aws::Region::US_EAST_2; // Set the region to Ohio
@@ -103,7 +97,7 @@ void sendMessage(const string& message,const string& queueUrl) {
             if (sm_out.IsSuccess()) {
                 return;
             } else {
-                std::cerr << "Error sending message: " << sm_out.GetError().GetMessage() << std::endl;
+                std::cerr << "Error sending message: " << sm_out.GetError().GetMessage() << endl;
             }
         }
     }
@@ -113,7 +107,7 @@ void sendMessage(const string& message,const string& queueUrl) {
 
 int main() {
 
-    sendMessage("the message", "https://sqs.us-east-2.amazonaws.com/848490464384/request.fifo");
+    sendMessage("the message ggg", "https://sqs.us-east-2.amazonaws.com/848490464384/request.fifo");
     string msg = waitForResponse("https://sqs.us-east-2.amazonaws.com/848490464384/request.fifo");
     cout << "got back:" << msg << endl;
     return 0;
