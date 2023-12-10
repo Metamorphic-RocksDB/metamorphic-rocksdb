@@ -1,0 +1,37 @@
+#include <parquet/parquet_version.h>
+#include <parquet/arrow/writer.h>
+#include <parquet/arrow/schema.h>
+#include <arrow/array.h>
+#include <arrow/table.h>
+
+int main() {
+  // Define sample data
+  std::vector<std::string> names = {"John Doe", "Jane Doe", "Mike Smith"};
+  std::vector<int32_t> ages = {30, 25, 40};
+  std::vector<std::string> cities = {"New York", "Los Angeles", "Chicago"};
+
+  // Create Arrow arrays
+  auto name_array = std::make_shared<arrow::StringArray>(names);
+  auto age_array = std::make_shared<arrow::Int32Array>(ages);
+  auto city_array = std::make_shared<arrow::StringArray>(cities);
+
+  // Create an Arrow schema
+  auto schema = std::make_shared<arrow::Schema>(
+      {arrow::field("name", arrow::utf8()), arrow::field("age", arrow::int32()), arrow::field("city", arrow::utf8())});
+
+  // Create an Arrow table
+  auto table = arrow::Table::Make(schema, {name_array, age_array, city_array});
+
+  // Open a Parquet writer
+  parquet::ArrowWriterProperties properties;
+  std::unique_ptr<parquet::arrow::FileWriter> writer;
+  writer = parquet::arrow::FileWriter::OpenFile("data.parquet", table->schema(), properties);
+
+  // Write the Arrow table to the Parquet file
+  writer->WriteTable(*table);
+
+  // Close the Parquet writer
+  writer->Close();
+
+  return 0;
+}

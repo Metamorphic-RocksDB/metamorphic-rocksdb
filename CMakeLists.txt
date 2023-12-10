@@ -1,12 +1,22 @@
-cmake_minimum_required(VERSION 3.23)
-project(AwsQueue)
+cmake_minimum_required(VERSION 3.16)
 
-include_directories(/usr/local/include)
+project(metarocks)
 
-find_package(AWSSDK REQUIRED COMPONENTS sqs core)
+set(CMAKE_CXX_STANDARD 17)
 
-add_executable(AwsQueue AwsQueue.cpp)
+# RocksDB Configuration
+set(ROCKSDB_INCLUDE_DIR /home/ubuntu/cs839/rocksdb/include)
+set(ROCKSDB_LIBRARY /home/ubuntu/cs839/rocksdb/build/librocksdb.a)
+include_directories(${ROCKSDB_INCLUDE_DIR})
 
-target_compile_features(AwsQueue PUBLIC cxx_std_11)
-target_link_libraries(AwsQueue ${AWSSDK_LINK_LIBRARIES})
+# Include AWS SDK
+find_package(AWSSDK REQUIRED COMPONENTS sqs)
+find_package(Arrow)
+
+add_executable(metarocks src/main.cpp)
+target_link_libraries(metarocks PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
+target_link_libraries(metarocks PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
+target_link_libraries(metarocks PRIVATE arrow parquet)
+
+
 
