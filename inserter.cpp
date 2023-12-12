@@ -61,8 +61,12 @@ std::vector<std::vector<std::string>> parseCSV(const std::string& filename) {
     return data;
 }
 
-int main() {
+int main(int argc, char** argv) {
  
+    if(argc!=2) {
+        std::cout << "please the supply the key prefix\n";
+        exit(1);
+    }
 
     rocksdb::DB* db;
     rocksdb::Options options;
@@ -76,6 +80,8 @@ int main() {
  
    std::string filename = "rows.csv";
    std::vector<std::vector<std::string>> csvData = parseCSV(filename);
+
+   std::string prefix(argv[1]);
 
    auto headers = csvData[0];
    csvData.erase(csvData.begin());
@@ -91,8 +97,8 @@ int main() {
         }
         jsonRow += "}";
         // std::cout << jsonRow <<  std::endl;
-        std::string key = row[0]+"-"+row[2]+"-"+row[3];
-        status = db->Put(rocksdb::WriteOptions(), row[0], jsonRow);
+        std::string key = prefix+"-"+row[0]+"-"+row[2]+"-"+row[3];
+        status = db->Put(rocksdb::WriteOptions(), key, jsonRow);
         assert(status.ok());
  
     }
