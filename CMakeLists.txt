@@ -5,8 +5,8 @@ project(metarocks)
 set(CMAKE_CXX_STANDARD 17)
 
 # RocksDB Configuration
-set(ROCKSDB_INCLUDE_DIR /home/ubuntu/cs839/rocksdb/include)
-set(ROCKSDB_LIBRARY /home/ubuntu/cs839/rocksdb/build/librocksdb.a)
+set(ROCKSDB_INCLUDE_DIR /home/ubuntu/metamorphic-rocksdb/metarocks/include)
+set(ROCKSDB_LIBRARY /home/ubuntu/metamorphic-rocksdb/metarocks/build/librocksdb.a)
 include_directories(${ROCKSDB_INCLUDE_DIR})
 
 # Include AWS SDK
