@@ -34,7 +34,6 @@ target_link_libraries(inserter3 PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 p
 target_link_libraries(inserter3 PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
 target_link_libraries(inserter3 PRIVATE arrow parquet)
 
-
 add_executable(inserter4 src/inserter4.cpp)
 target_link_libraries(inserter4 PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
 target_link_libraries(inserter4 PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
