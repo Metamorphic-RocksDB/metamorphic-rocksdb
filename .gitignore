@@ -4,3 +4,6 @@ rows.csv.gz
 inserter
 dumper
 a.out
+
+metarocks/build
+build/

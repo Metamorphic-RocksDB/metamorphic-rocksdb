@@ -22,18 +22,16 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include <utility>
-#include <iostream>
 #include <string>
 
 #include <aws/core/Aws.h>
-#include <aws/core/utils/crypto/Sha256.h>
 #include <aws/core/utils/HashingUtils.h>
 #include <aws/core/utils/Outcome.h>
+#include <aws/core/utils/crypto/Sha256.h>
 #include <aws/sqs/SQSClient.h>
+#include <aws/sqs/model/DeleteMessageRequest.h>
 #include <aws/sqs/model/ReceiveMessageRequest.h>
 #include <aws/sqs/model/SendMessageRequest.h>
-#include <aws/sqs/model/DeleteMessageRequest.h>
 
 #include <rocksdb/db.h>
 
@@ -42,52 +40,51 @@
 #include "parquet/stream_reader.h"
 #include "parquet/stream_writer.h"
 
-
-using std::string;
 using std::cout;
 using std::endl;
+using std::string;
 
 // This file gives an example of how to use the parquet::StreamWriter
 // and parquet::StreamReader classes.
 // It shows writing/reading of the supported types as well as how a
 // user-defined type can be handled.
 
-template <typename T>
-using optional = parquet::StreamReader::optional<T>;
+template <typename T> using optional = parquet::StreamReader::optional<T>;
 
 // Example of a user-defined type to be written to/read from Parquet
 // using C++ input/output operators.
 class UserTimestamp {
- public:
+public:
   UserTimestamp() = default;
 
   explicit UserTimestamp(const std::chrono::microseconds v) : ts_{v} {}
 
-  bool operator==(const UserTimestamp& x) const { return ts_ == x.ts_; }
+  bool operator==(const UserTimestamp &x) const { return ts_ == x.ts_; }
 
-  void dump(std::ostream& os) const {
+  void dump(std::ostream &os) const {
     const auto t = static_cast<std::time_t>(
         std::chrono::duration_cast<std::chrono::seconds>(ts_).count());
     os << std::put_time(std::gmtime(&t), "%Y%m%d-%H%M%S");
   }
 
-  void dump(parquet::StreamWriter& os) const { os << ts_; }
+  void dump(parquet::StreamWriter &os) const { os << ts_; }
 
- private:
+private:
   std::chrono::microseconds ts_;
 };
 
-std::ostream& operator<<(std::ostream& os, const UserTimestamp& v) {
+std::ostream &operator<<(std::ostream &os, const UserTimestamp &v) {
   v.dump(os);
   return os;
 }
 
-parquet::StreamWriter& operator<<(parquet::StreamWriter& os, const UserTimestamp& v) {
+parquet::StreamWriter &operator<<(parquet::StreamWriter &os,
+                                  const UserTimestamp &v) {
   v.dump(os);
   return os;
 }
 
-parquet::StreamReader& operator>>(parquet::StreamReader& os, UserTimestamp& v) {
+parquet::StreamReader &operator>>(parquet::StreamReader &os, UserTimestamp &v) {
   std::chrono::microseconds ts;
 
   os >> ts;
@@ -104,12 +101,12 @@ std::shared_ptr<parquet::schema::GroupNode> GetSchema() {
       parquet::ConvertedType::UTF8));
 
   fields.push_back(parquet::schema::PrimitiveNode::Make(
-      "char_field", parquet::Repetition::REQUIRED, parquet::Type::FIXED_LEN_BYTE_ARRAY,
-      parquet::ConvertedType::NONE, 1));
+      "char_field", parquet::Repetition::REQUIRED,
+      parquet::Type::FIXED_LEN_BYTE_ARRAY, parquet::ConvertedType::NONE, 1));
 
   fields.push_back(parquet::schema::PrimitiveNode::Make(
-      "char[4]_field", parquet::Repetition::REQUIRED, parquet::Type::FIXED_LEN_BYTE_ARRAY,
-      parquet::ConvertedType::NONE, 4));
+      "char[4]_field", parquet::Repetition::REQUIRED,
+      parquet::Type::FIXED_LEN_BYTE_ARRAY, parquet::ConvertedType::NONE, 4));
 
   fields.push_back(parquet::schema::PrimitiveNode::Make(
       "int8_field", parquet::Repetition::REQUIRED, parquet::Type::INT32,
@@ -137,11 +134,12 @@ std::shared_ptr<parquet::schema::GroupNode> GetSchema() {
       parquet::ConvertedType::TIMESTAMP_MICROS));
 
   fields.push_back(parquet::schema::PrimitiveNode::Make(
-      "chrono_milliseconds_field", parquet::Repetition::REQUIRED, parquet::Type::INT64,
-      parquet::ConvertedType::TIMESTAMP_MILLIS));
+      "chrono_milliseconds_field", parquet::Repetition::REQUIRED,
+      parquet::Type::INT64, parquet::ConvertedType::TIMESTAMP_MILLIS));
 
   return std::static_pointer_cast<parquet::schema::GroupNode>(
-      parquet::schema::GroupNode::Make("schema", parquet::Repetition::REQUIRED, fields));
+      parquet::schema::GroupNode::Make("schema", parquet::Repetition::REQUIRED,
+                                       fields));
 }
 
 struct TestData {
@@ -150,7 +148,8 @@ struct TestData {
   static void init() { std::time(&ts_offset_); }
 
   static optional<std::string> GetOptString(const int i) {
-    if (i % 2 == 0) return {};
+    if (i % 2 == 0)
+      return {};
     return "Str #" + std::to_string(i);
   }
   static std::string_view GetStringView(const int i) {
@@ -158,22 +157,26 @@ struct TestData {
     string = "StringView #" + std::to_string(i);
     return std::string_view(string);
   }
-  static const char* GetCharPtr(const int i) {
+  static const char *GetCharPtr(const int i) {
     static std::string string;
     string = "CharPtr #" + std::to_string(i);
     return string.c_str();
   }
   static char GetChar(const int i) { return i & 1 ? 'M' : 'F'; }
-  static int8_t GetInt8(const int i) { return static_cast<int8_t>((i % 256) - 128); }
+  static int8_t GetInt8(const int i) {
+    return static_cast<int8_t>((i % 256) - 128);
+  }
   static uint16_t GetUInt16(const int i) { return static_cast<uint16_t>(i); }
   static int32_t GetInt32(const int i) { return 3 * i - 17; }
   static optional<uint64_t> GetOptUInt64(const int i) {
-    if (i % 11 == 0) return {};
+    if (i % 11 == 0)
+      return {};
     return (1ull << 40) + i * i + 101;
   }
   static double GetDouble(const int i) { return 6.62607004e-34 * 3e8 * i; }
   static UserTimestamp GetUserTimestamp(const int i) {
-    return UserTimestamp{std::chrono::microseconds{(ts_offset_ + 3 * i) * 1000000 + i}};
+    return UserTimestamp{
+        std::chrono::microseconds{(ts_offset_ + 3 * i) * 1000000 + i}};
   }
   static std::chrono::milliseconds GetChronoMilliseconds(const int i) {
     return std::chrono::milliseconds{(ts_offset_ + 3 * i) * 1000ull + i};
@@ -181,7 +184,7 @@ struct TestData {
 
   static char char4_array[4];
 
- private:
+private:
   static std::time_t ts_offset_;
 };
 
@@ -191,8 +194,8 @@ std::time_t TestData::ts_offset_;
 void WriteParquetFile() {
   std::shared_ptr<arrow::io::FileOutputStream> outfile;
 
-  PARQUET_ASSIGN_OR_THROW(
-      outfile, arrow::io::FileOutputStream::Open("parquet-stream-api-example.parquet"));
+  PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open(
+                                       "parquet-stream-api-example.parquet"));
 
   parquet::WriterProperties::Builder builder;
 
@@ -211,24 +214,24 @@ void WriteParquetFile() {
     // Output string using 3 different types: std::string, std::string_view and
     // const char *.
     switch (i % 3) {
-      case 0:
-        os << TestData::GetOptString(i);
-        break;
-      case 1:
-        os << TestData::GetStringView(i);
-        break;
-      case 2:
-        os << TestData::GetCharPtr(i);
-        break;
+    case 0:
+      os << TestData::GetOptString(i);
+      break;
+    case 1:
+      os << TestData::GetStringView(i);
+      break;
+    case 2:
+      os << TestData::GetCharPtr(i);
+      break;
     }
     os << TestData::GetChar(i);
     switch (i % 2) {
-      case 0:
-        os << TestData::char4_array;
-        break;
-      case 1:
-        os << parquet::StreamWriter::FixedStringView{TestData::GetCharPtr(i), 4};
-        break;
+    case 0:
+      os << TestData::char4_array;
+      break;
+    case 1:
+      os << parquet::StreamWriter::FixedStringView{TestData::GetCharPtr(i), 4};
+      break;
     }
     os << TestData::GetInt8(i);
     os << TestData::GetUInt16(i);
@@ -249,8 +252,8 @@ void WriteParquetFile() {
 void ReadParquetFile() {
   std::shared_ptr<arrow::io::ReadableFile> infile;
 
-  PARQUET_ASSIGN_OR_THROW(
-      infile, arrow::io::ReadableFile::Open("parquet-stream-api-example.parquet"));
+  PARQUET_ASSIGN_OR_THROW(infile, arrow::io::ReadableFile::Open(
+                                      "parquet-stream-api-example.parquet"));
 
   parquet::StreamReader os{parquet::ParquetFileReader::Open(infile)};
 
@@ -302,24 +305,26 @@ void ReadParquetFile() {
     }
     // Check data.
     switch (i % 3) {
-      case 0:
-        assert(opt_string == TestData::GetOptString(i));
-        break;
-      case 1:
-        assert(*opt_string == TestData::GetStringView(i));
-        break;
-      case 2:
-        assert(*opt_string == TestData::GetCharPtr(i));
-        break;
+    case 0:
+      assert(opt_string == TestData::GetOptString(i));
+      break;
+    case 1:
+      assert(*opt_string == TestData::GetStringView(i));
+      break;
+    case 2:
+      assert(*opt_string == TestData::GetCharPtr(i));
+      break;
     }
     assert(ch == TestData::GetChar(i));
     switch (i % 2) {
-      case 0:
-        assert(0 == std::memcmp(char_array, TestData::char4_array, sizeof(char_array)));
-        break;
-      case 1:
-        assert(0 == std::memcmp(char_array, TestData::GetCharPtr(i), sizeof(char_array)));
-        break;
+    case 0:
+      assert(0 == std::memcmp(char_array, TestData::char4_array,
+                              sizeof(char_array)));
+      break;
+    case 1:
+      assert(0 == std::memcmp(char_array, TestData::GetCharPtr(i),
+                              sizeof(char_array)));
+      break;
     }
     assert(int8 == TestData::GetInt8(i));
     assert(uint16 == TestData::GetUInt16(i));
@@ -334,134 +339,249 @@ void ReadParquetFile() {
   std::cout << "Parquet Stream Reading complete." << std::endl;
 }
 
+string waitForResponse(const string &queueUrl) {
+  Aws::SDKOptions options;
+  Aws::InitAPI(options);
+  string result = "";
+  {
+    Aws::Client::ClientConfiguration clientConfig;
+    clientConfig.region = Aws::Region::US_EAST_2; // Set the region to Ohio
 
-string waitForResponse(const string& queueUrl) {
-    Aws::SDKOptions options;
-    Aws::InitAPI(options);
-    string result = "";
-    {
-        Aws::Client::ClientConfiguration clientConfig;
-        clientConfig.region = Aws::Region::US_EAST_2; // Set the region to Ohio
+    Aws::SQS::SQSClient sqs(clientConfig);
 
-        Aws::SQS::SQSClient sqs(clientConfig);
-  
-        // Create a receive message request
-        Aws::SQS::Model::ReceiveMessageRequest receive_request;
-        receive_request.SetQueueUrl(queueUrl);
-        receive_request.SetMaxNumberOfMessages(1); // Max number of messages to receive
-        receive_request.SetVisibilityTimeout(30); // Visibility timeout
-        receive_request.SetWaitTimeSeconds(20); // Long polling wait time
+    // Create a receive message request
+    Aws::SQS::Model::ReceiveMessageRequest receive_request;
+    receive_request.SetQueueUrl(queueUrl);
+    receive_request.SetMaxNumberOfMessages(
+        1); // Max number of messages to receive
+    receive_request.SetVisibilityTimeout(30); // Visibility timeout
+    receive_request.SetWaitTimeSeconds(20);   // Long polling wait time
 
-        // Receive the message
-        auto receive_outcome = sqs.ReceiveMessage(receive_request);
+    // Receive the message
+    auto receive_outcome = sqs.ReceiveMessage(receive_request);
 
-        if (receive_outcome.IsSuccess()) {
-            const auto &messages = receive_outcome.GetResult().GetMessages();
-            if (!messages.empty()) {
-                for (const auto &message: messages) {
-                    result = message.GetBody();
+    if (receive_outcome.IsSuccess()) {
+      const auto &messages = receive_outcome.GetResult().GetMessages();
+      if (!messages.empty()) {
+        for (const auto &message : messages) {
+          result = message.GetBody();
 
-                    // After processing, delete the message from the queue
-                    Aws::SQS::Model::DeleteMessageRequest delete_request;
-                    delete_request.SetQueueUrl(queueUrl);
-                    delete_request.SetReceiptHandle(message.GetReceiptHandle());
-                    auto delete_outcome = sqs.DeleteMessage(delete_request);
-                    if (!delete_outcome.IsSuccess()) {
-                        std::cerr << "Error deleting message: " << delete_outcome.GetError().GetMessage() << endl;
-                    }
-                }
-            } else {
-                cout << "No messages to process." << endl;
-            }
-        } else {
-            std::cerr << "Error receiving messages: " << receive_outcome.GetError().GetMessage() << endl;
+          // After processing, delete the message from the queue
+          Aws::SQS::Model::DeleteMessageRequest delete_request;
+          delete_request.SetQueueUrl(queueUrl);
+          delete_request.SetReceiptHandle(message.GetReceiptHandle());
+          auto delete_outcome = sqs.DeleteMessage(delete_request);
+          if (!delete_outcome.IsSuccess()) {
+            std::cerr << "Error deleting message: "
+                      << delete_outcome.GetError().GetMessage() << endl;
+          }
         }
+      } else {
+        cout << "No messages to process." << endl;
+      }
+    } else {
+      std::cerr << "Error receiving messages: "
+                << receive_outcome.GetError().GetMessage() << endl;
     }
-    Aws::ShutdownAPI(options);
-    return result;
+  }
+  Aws::ShutdownAPI(options);
+  return result;
 }
 
-void sendMessage(const string& message,const string& queueUrl) {
-    Aws::SDKOptions options;
-    Aws::InitAPI(options);
-    {
-        auto now = std::chrono::high_resolution_clock::now();
+void sendMessage(const string &message, const string &queueUrl) {
+  Aws::SDKOptions options;
+  Aws::InitAPI(options);
+  {
+    auto now = std::chrono::high_resolution_clock::now();
 
-        // Convert the time point to a duration since the epoch
-        auto duration_since_epoch = now.time_since_epoch();
+    // Convert the time point to a duration since the epoch
+    auto duration_since_epoch = now.time_since_epoch();
 
-        // Convert the duration to a specific unit (e.g., nanoseconds)
-        auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(duration_since_epoch).count();
+    // Convert the duration to a specific unit (e.g., nanoseconds)
+    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           duration_since_epoch)
+                           .count();
 
-        std::stringstream ss;
-        ss << nanoseconds;
-        string nanoStr = ss.str();
+    std::stringstream ss;
+    ss << nanoseconds;
+    string nanoStr = ss.str();
 
-        // Hash the input string
-        Aws::Utils::Crypto::Sha256 sha256;
-        auto hashBytes = sha256.Calculate(message + nanoStr);
-        auto hash = Aws::Utils::HashingUtils::HexEncode(hashBytes.GetResult());
+    // Hash the input string
+    Aws::Utils::Crypto::Sha256 sha256;
+    auto hashBytes = sha256.Calculate(message + nanoStr);
+    auto hash = Aws::Utils::HashingUtils::HexEncode(hashBytes.GetResult());
 
-        Aws::Client::ClientConfiguration clientConfig;
-        clientConfig.region = Aws::Region::US_EAST_2; // Set the region to Ohio
+    Aws::Client::ClientConfiguration clientConfig;
+    clientConfig.region = Aws::Region::US_EAST_2; // Set the region to Ohio
 
-        Aws::SQS::SQSClient sqs(clientConfig);
+    Aws::SQS::SQSClient sqs(clientConfig);
 
-        while (1) {
-            Aws::SQS::Model::SendMessageRequest smReq;
-            smReq.SetQueueUrl(queueUrl);
-            smReq.SetMessageGroupId("group");
-            smReq.SetMessageDeduplicationId(hash);
-            smReq.SetMessageBody(message);
+    while (1) {
+      Aws::SQS::Model::SendMessageRequest smReq;
+      smReq.SetQueueUrl(queueUrl);
+      smReq.SetMessageGroupId("group");
+      smReq.SetMessageDeduplicationId(hash);
+      smReq.SetMessageBody(message);
 
-            auto sm_out = sqs.SendMessage(smReq);
-            if (sm_out.IsSuccess()) {
-                return;
-            } else {
-                std::cerr << "Error sending message: " << sm_out.GetError().GetMessage() << endl;
-            }
-        }
+      auto sm_out = sqs.SendMessage(smReq);
+      if (sm_out.IsSuccess()) {
+        return;
+      } else {
+        std::cerr << "Error sending message: " << sm_out.GetError().GetMessage()
+                  << endl;
+      }
     }
-    Aws::ShutdownAPI(options);
+  }
+  Aws::ShutdownAPI(options);
+}
 
+static string Key(int i) {
+  char buf[100];
+  snprintf(buf, sizeof(buf), "key%06d", i);
+  return string(buf);
+}
+
+static void PrintStats(rocksdb::DB *db) {
+  string stats;
+  db->GetProperty("rocksdb.stats", &stats);
+  cout << "Stats: " << stats << endl;
+}
+
+static void PrintSSTableCounts(rocksdb::DB *db) {
+  std::vector<rocksdb::LiveFileMetaData> metadata;
+  db->GetLiveFilesMetaData(&metadata);
+  cout << "SSTable Counts: " << metadata.size() << endl;
+
+  rocksdb::ColumnFamilyMetaData meta;
+  db->GetColumnFamilyMetaData(&meta);
+
+  std::vector<std::vector<rocksdb::SstFileMetaData>::size_type>
+      sstable_files_by_level;
+  for (const auto &level : meta.levels) {
+    sstable_files_by_level.push_back(level.files.size());
+  }
+
+  cout << "SSTable Files by Level: ";
+  for (std::vector<int>::size_type i = 0; i < sstable_files_by_level.size();
+       i++) {
+    cout << sstable_files_by_level[i] << " ";
+  }
+  cout << endl;
+}
+
+void PrintCompactionCount(rocksdb::ExternalCompactionService *cs) {
+  cout << "Compaction Count: " << cs->GetCompactionNum() << endl;
+}
+
+void PrintStatus(rocksdb::DB *db, rocksdb::ExternalCompactionService *cs) {
+  PrintSSTableCounts(db);
+  PrintCompactionCount(cs);
+}
+
+string kDBPath = "/home/ubuntu/s3fuse/conn.db";
+string kDBCompactionOutputPath = "/home/ubuntu/s3fuse/conn.db/output";
+string kCompactionRequestQueueUrl = "https://sqs.us-east-2.amazonaws.com/848490464384/request.fifo";
+string kCompactionResponseQueueUrl ="https://sqs.us-east-2.amazonaws.com/848490464384/response.fifo";
+
+void startExternalCompactionService(
+    rocksdb::Options *db_options,
+    rocksdb::ExternalCompactionService **cs /*output*/) {
+  rocksdb::Options compactor_options;
+  {
+    rocksdb::Options options;
+    options.env = db_options->env;
+    options.create_if_missing = false; // secondary
+    options.fail_if_options_file_error = true;
+    compactor_options = options;
+  }
+
+  std::shared_ptr<rocksdb::ExternalCompactionService> compaction_service;
+  // ExternalCompactionService* cs; // inherit from output param
+  {
+    string db_path = kDBPath;
+    std::shared_ptr<rocksdb::Statistics> compactor_statistics =
+        ROCKSDB_NAMESPACE::CreateDBStatistics();
+    std::vector<std::shared_ptr<rocksdb::EventListener>> listeners;
+    std::vector<std::shared_ptr<rocksdb::TablePropertiesCollectorFactory>>
+        table_properties_collector_factories;
+
+    compaction_service =
+        std::make_shared<ROCKSDB_NAMESPACE::ExternalCompactionService>(
+            db_path, compactor_options, compactor_statistics, listeners,
+            table_properties_collector_factories);
+    *cs = compaction_service.get();
+  }
+
+  db_options->compaction_service = compaction_service;
 }
 
 void rockscalls() {
-    rocksdb::DB* db;
-    rocksdb::Options options;
+  rocksdb::DB *db;
+  rocksdb::Options options;
 
-    options.create_if_missing = true;
+  options.create_if_missing = true;
 
-    // Open DB
-    rocksdb::Status status = rocksdb::DB::Open(options, "test.db", &db);
-    assert(status.ok());
+  // Open DB
 
-    // Put key-value
-    status = db->Put(rocksdb::WriteOptions(), "key1", "value1");
-    assert(status.ok());
-    status = db->Put(rocksdb::WriteOptions(), "key2", "value2");
-    assert(status.ok());
+  rocksdb::ExternalCompactionService *cs;
+  startExternalCompactionService(&options, &cs);
+  rocksdb::Status status = rocksdb::DB::Open(options, kDBPath, &db);
+  // wait 3 seconds
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+  assert(status.ok());
 
-    // Get value
-    std::string value;
-    status = db->Get(rocksdb::ReadOptions(), "key1", &value);
-    assert(status.ok());
-    std::cout << "Got value: " << value << std::endl;
+  // Put key-value
+  //status = db->Put(rocksdb::WriteOptions(), "key1", "value1");
+  //assert(status.ok());
 
-    // Close DB
-    delete db;
+  status = db->Put(rocksdb::WriteOptions(), "key1", "{\"SerialNumber\": \"10131\", \"DateRecorded\": \"02-01-2002\", \"Address\": \"6 MEL RD\", \"Sale Amount\": \"140000.00\", \"PropertyType\": \"\", \"NonUseCode\": \"\", \"OPMremarks\": \"\" }");
+  assert(status.ok());
+
+  std::string value;
+  status = db->Get(rocksdb::ReadOptions(), "key1", &value);
+  assert(status.ok());
+  cout << "key1: " << value << endl;
+
+  status = db->Put(rocksdb::WriteOptions(), "key2", "{\"SerialNumber\": \"10066\", \"DateRecorded\": \"02-27-2002\", \"Address\": \"14 LONETOWN RD\", \"Sale Amount\": \"300000.00\", \"PropertyType\": \"\", \"NonUseCode\": \"\", \"OPMremarks\": \"\" }");
+  assert(status.ok());
+
+  // Get value
+
+  
+
+  PrintStatus(db, cs);
+
+  cout << "Manual compaction " << cs->GetCompactionNum() << endl;
+
+  rocksdb::CompactRangeOptions coptions;
+  db->CompactRange(coptions, nullptr,
+                   nullptr); // compact whole database, b/c nullptr is both
+                             // first and last record
+
+  cout << "Compaction complete, now count is " << cs->GetCompactionNum()
+       << endl;
+
+  PrintSSTableCounts(db);
+
+  // Verify values are correct
+
+  cout << "Verifying values are correct" << endl;
+
+  // Close DB
+  delete db;
 }
 
-
 int main() {
-    WriteParquetFile();
-    ReadParquetFile();
+  //WriteParquetFile();
+  //ReadParquetFile();
 
-    rockscalls();
+  rockscalls();
 
-    sendMessage("the message ggg", "https://sqs.us-east-2.amazonaws.com/848490464384/request.fifo");
-    string msg = waitForResponse("https://sqs.us-east-2.amazonaws.com/848490464384/request.fifo");
-    cout << "got back:" << msg << endl;
+  // sendMessage("the message ggg",
+  // "https://sqs.us-east-2.amazonaws.com/848490464384/request.fifo"); string
+  // msg =
+  // waitForResponse("https://sqs.us-east-2.amazonaws.com/848490464384/request.fifo");
+  // cout << "got back:" << msg << endl;
 
   return 0;
 }

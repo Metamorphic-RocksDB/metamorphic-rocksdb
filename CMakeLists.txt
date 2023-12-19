@@ -18,5 +18,38 @@ target_link_libraries(metarocks PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 p
 target_link_libraries(metarocks PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
 target_link_libraries(metarocks PRIVATE arrow parquet)
 
+add_executable(inserter src/inserter.cpp)
+target_link_libraries(inserter PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
+target_link_libraries(inserter PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
+target_link_libraries(inserter PRIVATE arrow parquet)
+
+add_executable(inserter2 src/inserter2.cpp)
+target_link_libraries(inserter2 PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
+target_link_libraries(inserter2 PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
+target_link_libraries(inserter2 PRIVATE arrow parquet)
 
 
+add_executable(inserter3 src/inserter3.cpp)
+target_link_libraries(inserter3 PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
+target_link_libraries(inserter3 PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
+target_link_libraries(inserter3 PRIVATE arrow parquet)
+
+
+add_executable(inserter4 src/inserter4.cpp)
+target_link_libraries(inserter4 PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
+target_link_libraries(inserter4 PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
+target_link_libraries(inserter4 PRIVATE arrow parquet)
+
+add_executable(inserter5 src/inserter5.cpp)
+target_link_libraries(inserter5 PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
+target_link_libraries(inserter5 PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
+target_link_libraries(inserter5 PRIVATE arrow parquet)
+
+add_executable(inserter6 src/inserter6.cpp)
+target_link_libraries(inserter6 PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
+target_link_libraries(inserter6 PRIVATE aws-cpp-sdk-core aws-cpp-sdk-sqs)
+target_link_libraries(inserter6 PRIVATE arrow parquet)
+
+
+add_executable(dumper src/dumper.cpp)
+target_link_libraries(dumper PRIVATE ${ROCKSDB_LIBRARY} snappy lz4 zstd bz2 pthread)
